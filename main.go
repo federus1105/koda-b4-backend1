@@ -38,6 +38,12 @@ func main() {
 		})
 	})
 
+	// --- GET ALL  ---
+	router.GET("/users", func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{
+			"data":   Users,
+		})
+	})
 
 	router.Run("localhost:8080")
 }
