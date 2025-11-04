@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,7 +13,7 @@ type User struct {
 }
 
 type Response struct {
-	Success bool `json:"success"`
+	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
 
@@ -41,8 +43,31 @@ func main() {
 	// --- GET ALL  ---
 	router.GET("/users", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{
-			"data":   Users,
+			"succes": true,
+			"data": Users,
 		})
+	})
+
+	// --- GET USER BY ID ---
+	router.GET("/users/:id", func(ctx *gin.Context) {
+		id, err := strconv.Atoi(ctx.Param("id"))
+		if err != nil {
+			ctx.JSON(400, Response{
+				Success: false,
+				Message: "ID tidak valid",
+			})
+			return
+		}
+		for _, user := range Users {
+			if user.Id == id {
+				ctx.JSON(200, gin.H{
+					"success": true,
+					"user":   user,
+				})
+				return
+			}
+		}
+
 	})
 
 	router.Run("localhost:8080")
