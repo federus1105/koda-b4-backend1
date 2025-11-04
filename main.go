@@ -44,7 +44,7 @@ func main() {
 	router.GET("/users", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{
 			"succes": true,
-			"data": Users,
+			"data":   Users,
 		})
 	})
 
@@ -62,12 +62,34 @@ func main() {
 			if user.Id == id {
 				ctx.JSON(200, gin.H{
 					"success": true,
-					"user":   user,
+					"user":    user,
 				})
 				return
 			}
 		}
 
+	})
+
+	router.DELETE("/users/:id", func(ctx *gin.Context) {
+		id, err := strconv.Atoi(ctx.Param("id"))
+		if err != nil {
+			ctx.JSON(400, Response{
+				Success: false,
+				Message: "ID tidak valid",
+			})
+			return
+		}
+
+		for i, user := range Users {
+			if user.Id == id {
+				Users = append(Users[:i], Users[i+1:]...)
+				ctx.JSON(200, gin.H{
+					"succes":  true,
+					"message": "berhasil menghapus data user",
+				})
+				return
+			}
+		}
 	})
 
 	router.Run("localhost:8080")
