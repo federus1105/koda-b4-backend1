@@ -17,6 +17,12 @@ type Response struct {
 	Message string `json:"message"`
 }
 
+type updateUser struct {
+	Id    *int    `json:"id,omitempty"`
+	Name  *string `json:"name,omitempty"`
+	Batch *string `json:"batch,omitempty"`
+}
+
 var Users []User
 
 func main() {
@@ -35,16 +41,16 @@ func main() {
 		}
 		Users = append(Users, body)
 		ctx.JSON(200, gin.H{
-			"succes": true,
-			"data":   Users,
+			"success": true,
+			"data":    Users,
 		})
 	})
 
 	// --- GET ALL  ---
 	router.GET("/users", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{
-			"succes": true,
-			"data":   Users,
+			"success": true,
+			"data":    Users,
 		})
 	})
 
@@ -70,6 +76,7 @@ func main() {
 
 	})
 
+	// --- DELETE USER BY ID ---
 	router.DELETE("/users/:id", func(ctx *gin.Context) {
 		id, err := strconv.Atoi(ctx.Param("id"))
 		if err != nil {
@@ -84,11 +91,48 @@ func main() {
 			if user.Id == id {
 				Users = append(Users[:i], Users[i+1:]...)
 				ctx.JSON(200, gin.H{
-					"succes":  true,
-					"message": "berhasil menghapus data user",
+					"success": true,
+					"message": "berhasil menghapus user",
 				})
 				return
 			}
+		}
+	})
+
+	// --- UPDATE USER BY ID ---
+	router.PATCH("/users/:id", func(ctx *gin.Context) {
+		var updateUser updateUser
+		id, err := strconv.Atoi(ctx.Param("id"))
+		if err != nil {
+			ctx.JSON(400, Response{
+				Success: false,
+				Message: "ID tidak valid",
+			})
+			return
+		}
+
+		if err := ctx.ShouldBindBodyWithJSON(&updateUser); err != nil {
+			ctx.JSON(400, Response{
+				Success: false,
+				Message: err.Error(),
+			})
+			return
+		}
+		for i, user := range Users {
+			if user.Id == id {
+				if updateUser.Name != nil {
+					Users[i].Name = *updateUser.Name
+				}
+				if updateUser.Batch != nil {
+					Users[i].Batch = *updateUser.Batch
+				}
+				ctx.JSON(200, gin.H{
+					"success": true,
+					"data":    Users[i],
+				})
+				return
+			}
+
 		}
 	})
 
