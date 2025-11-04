@@ -24,6 +24,7 @@ type updateUser struct {
 }
 
 var Users []User
+var NextId = 1
 
 func main() {
 	router := gin.Default()
@@ -39,7 +40,9 @@ func main() {
 			})
 			return
 		}
+		body.Id = NextId
 		Users = append(Users, body)
+		NextId++
 		ctx.JSON(200, gin.H{
 			"success": true,
 			"data":    Users,
