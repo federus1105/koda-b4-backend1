@@ -10,11 +10,17 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type UpdateUser struct {
-	Name  *string `json:"name,omitempty"`
-	Batch *string `json:"batch,omitempty"`
-}
-
+// Get All User
+// @Summary      Get all user with pagination, search, and sorting
+// @Description  Retrieve todos with optional search, pagination, and sort
+// @Tags         User
+// @Param        page        query  int    false  "Page number"         default(1)
+// @Param        limit       query  int    false  "Items per page"      default(8)
+// @Param        search      query  string false  "Search by name"
+// @Param        sort_order  query  string false  "Sort order (ASC/DESC)" enums(ASC, DESC) default(ASC)
+// @Success      200         {object}  models.User
+// @Failure      500         {object}  map[string]interface{}
+// @Router       /users [get]
 func GetAllUsers(ctx *gin.Context) {
 	users, msg := models.GetAllUsers()
 	if msg != "" {
@@ -30,6 +36,15 @@ func GetAllUsers(ctx *gin.Context) {
 	})
 }
 
+// GetUserbyID godoc
+// @Summary      Get User by ID
+// @Description  Retrieve a user item by its ID
+// @Tags         User
+// @Param        id   path      int  true  "user ID"
+// @Success      200  {object}  models.User
+// @Failure      400  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /users/{id} [get]
 func GetUserById(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -53,6 +68,17 @@ func GetUserById(ctx *gin.Context) {
 	})
 }
 
+// Register godoc
+// @Summary      Register
+// @Description  Register
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        Auth  body      models.User  true  "Auth data"
+// @Success      200   {object}  map[string]interface{}
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      500   {object}  map[string]interface{}
+// @Router       /users [post]
 func Register(ctx *gin.Context) {
 	var body models.User
 	if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -69,6 +95,15 @@ func Register(ctx *gin.Context) {
 	})
 }
 
+// DeleteUser godoc
+// @Summary      Delete a user by ID
+// @Description  Delete User by its ID
+// @Tags         User
+// @Param        id  path      int  true  "User ID"
+// @Success      200         {object}  map[string]interface{}
+// @Failure      400         {object}  map[string]interface{}
+// @Failure      500         {object}  map[string]interface{}
+// @Router       /users/{id} [delete]
 func DeleteUser(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -90,6 +125,16 @@ func DeleteUser(ctx *gin.Context) {
 	})
 }
 
+// UpdateUser godoc
+// @Summary      Edit an existing User by ID
+// @Description  Update user's name and batch by its ID
+// @Tags         User
+// @Param        id      path      int             true  "User ID"
+// @Param        Users body        UpdateUser true  "Users data"
+// @Success      200     {object}  UpdateUser
+// @Failure      400     {object}  map[string]interface{}
+// @Failure      500     {object}  map[string]interface{}
+// @Router       /users/{id} [patch]
 func UpdateUserById(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -98,7 +143,7 @@ func UpdateUserById(ctx *gin.Context) {
 			Message: "ID tidak valid"})
 		return
 	}
-	var update UpdateUser
+	var update models.UpdateUserRequest
 	if err := ctx.ShouldBindJSON(&update); err != nil {
 		ctx.JSON(404, models.Response{
 			Success: false,
@@ -117,6 +162,17 @@ func UpdateUserById(ctx *gin.Context) {
 		"data":    updated})
 }
 
+// Login godoc
+// @Summary      Login
+// @Description  Login
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        Auth  body      models.User  true  "Auth data"
+// @Success      200   {object}  map[string]interface{}
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      500   {object}  map[string]interface{}
+// @Router       /users/login [post]
 func Login(ctx *gin.Context) {
 	var body models.Auth
 	if err := ctx.ShouldBindJSON(&body); err != nil {
@@ -170,11 +226,19 @@ func Login(ctx *gin.Context) {
 	})
 }
 
+// UpdatePassword godoc
+// @Summary      Update Password
+// @Description  Update Password
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param Auth body models.UpdatePasswordRequest true "Auth data"
+// @Success      200   {object}  map[string]interface{}
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      500   {object}  map[string]interface{}
+// @Router       /users/update [post]
 func UpdatePassword(c *gin.Context) {
-	var req struct {
-		Email       string `json:"email"`
-		NewPassword string `json:"new_password"`
-	}
+	var req models.UpdatePasswordRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, models.Response{
