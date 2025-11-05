@@ -9,8 +9,15 @@ import (
 
 type User struct {
 	Id       int    `json:"id,omitempty"`
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,max=20"`
+	Email    string `json:"email,omitempty" binding:"required,email"`
+	Password string `json:"password,omitempty" binding:"required,max=20"`
+	Name     string `json:"name,omitempty" binding:"required,max=20"`
+	Batch    string `json:"batch,omitempty" binding:"required,max=2"`
+}
+
+type UpdatePasswordRequest struct {
+	Email       string `json:"email"`
+	NewPassword string `json:"new_password"`
 }
 
 type Auth struct {
@@ -18,10 +25,17 @@ type Auth struct {
 	Password string `json:"password" validate:"required,max=20"`
 }
 
+
+type UpdateUserRequest struct {
+	Name  *string `json:"name,omitempty"`
+	Batch *string `json:"batch,omitempty"`
+}
+
 type Response struct {
 	Success bool
 	Message string
 }
+
 
 var Users []User
 var NextId = 1
@@ -67,13 +81,13 @@ func UpdatePassword(u User, newPassword string) (User, string, error) {
 	}
 	for i := range Users {
 		if Users[i].Email == u.Email {
-			u.Password = string(hashedPassword)
-			return u, "Password updated successfully", nil
+			Users[i].Password = string(hashedPassword)
+			return Users[i], "Password updated successfully", nil
 		}
 	}
 	return User{},
-	"User not found for update",
-	fmt.Errorf("user not found")
+		"User not found for update",
+		fmt.Errorf("user not found")
 }
 
 func DeleteUser(id int) bool {
@@ -86,14 +100,14 @@ func DeleteUser(id int) bool {
 	return false
 }
 
-func UpdateUser(id int, email, password *string) *User {
+func UpdateUser(id int, name, batch *string) *User {
 	for i, u := range Users {
 		if u.Id == id {
-			if email != nil {
-				Users[i].Email = *email
+			if name != nil {
+				Users[i].Name = *name
 			}
-			if password != nil {
-				Users[i].Password = *password
+			if batch != nil {
+				Users[i].Batch = *batch
 			}
 			return &Users[i]
 		}
