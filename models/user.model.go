@@ -8,7 +8,7 @@ import (
 )
 
 type User struct {
-	Id       int    `json:"id"`
+	Id       int    `json:"id,omitempty"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,max=20"`
 }
@@ -93,14 +93,14 @@ func Login(email, password string) (bool, string) {
 	if err != nil {
 		for _, e := range err.(validator.ValidationErrors) {
 			switch e.Field() {
-			case "Email":
+			case "email":
 				if e.Tag() == "required" {
 					return false, "Email harus diisi"
 				}
 				if e.Tag() == "email" {
 					return false, "Email harus sesuai format"
 				}
-			case "Password":
+			case "password":
 				if e.Tag() == "required" {
 					return false, "Password harus diisi"
 				}
@@ -110,12 +110,29 @@ func Login(email, password string) (bool, string) {
 			}
 		}
 	}
-
+	var storedUser User
+	found := false
 	for _, user := range Users {
-		if user.Email == email && user.Password == password {
-			return true, "Login berhasil"
+		if user.Email == email {
+			storedUser = user
+			found = true
+			break
 		}
 	}
 
-	return false, "Email atau password salah"
+	if !found {
+		return false, "Email atau password salah"
+	}
+
+	match, err := argon2.VerifyEncoded([]byte(password), []byte(storedUser.Password))
+	if err != nil {
+		fmt.Printf("Error during verification: %v\n", err)
+		return false, "Email atau password salah"
+	}
+
+	if !match {
+		fmt.Println("invalid password attempt")
+		return false, "Email atau password salah"
+	}
+	return true, "Login berhasil"
 }
