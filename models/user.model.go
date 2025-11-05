@@ -1,14 +1,16 @@
 package models
 
+import "github.com/go-playground/validator/v10"
+
 type User struct {
-	Id    int    `json:"id"`
-	Name  string `json:"name" binding:"required,max=20"`
-	Batch string `json:"batch" binding:"required,max=2"`
+	Id       int    `json:"id"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,max=20"`
 }
 
 type Auth struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6,max=20"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,max=20"`
 }
 
 type Response struct {
@@ -16,12 +18,10 @@ type Response struct {
 	Message string
 }
 
-var UsersAuth = []Auth{
-	{Email: "andi@example.com", Password: "password123"},
-}
 
 var Users []User
 var NextId = 1
+var validate = validator.New()
 
 func GetAllUsers() ([]User, string) {
 	if len(Users) == 0 {
@@ -56,14 +56,14 @@ func DeleteUser(id int) bool {
 	return false
 }
 
-func UpdateUser(id int, name, batch *string) *User {
+func UpdateUser(id int, email, password *string) *User {
 	for i, u := range Users {
 		if u.Id == id {
-			if name != nil {
-				Users[i].Name = *name
+			if email != nil {
+				Users[i].Email = *email
 			}
-			if batch != nil {
-				Users[i].Batch = *batch
+			if password != nil {
+				Users[i].Password = *password
 			}
 			return &Users[i]
 		}
@@ -71,11 +71,39 @@ func UpdateUser(id int, name, batch *string) *User {
 	return nil
 }
 
-func Login(email, password string) bool {
-	for _, user := range UsersAuth {
-		if user.Email == email && user.Password == password {
-			return true
+func Login(email, password string) (bool, string) {
+	auth := Auth{
+		Email:    email,
+		Password: password,
+	}
+
+	err := validate.Struct(auth)
+	if err != nil {
+		for _, e := range err.(validator.ValidationErrors) {
+			switch e.Field() {
+			case "Email":
+				if e.Tag() == "required" {
+					return false, "Email harus diisi"
+				}
+				if e.Tag() == "email" {
+					return false, "Email harus sesuai format"
+				}
+			case "Password":
+				if e.Tag() == "required" {
+					return false, "Password harus diisi"
+				}
+				if e.Tag() == "max" {
+					return false, "Password maksimal 20 karakter"
+				}
+			}
 		}
 	}
-	return false
+
+	for _, user := range Users {
+		if user.Email == email && user.Password == password {
+			return true, "Login berhasil"
+		}
+	}
+
+	return false, "Email atau password salah"
 }

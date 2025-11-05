@@ -2,9 +2,12 @@ package controllers
 
 import (
 	"backend-day1/models"
-	"github.com/gin-gonic/gin"
+	"errors"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type UpdateUser struct {
@@ -117,19 +120,50 @@ func UpdateUserById(ctx *gin.Context) {
 func Login(ctx *gin.Context) {
 	var body models.Auth
 	if err := ctx.ShouldBindJSON(&body); err != nil {
-		ctx.JSON(404, models.Response{
+		var ve validator.ValidationErrors
+		if errors.As(err, &ve) {
+			for _, e := range ve {
+				var msg string
+				switch e.Field() {
+				case "Email":
+					switch e.Tag() {
+					case "required":
+						msg = "Email harus diisi"
+					case "email":
+						msg = "Email harus sesuai format"
+					}
+				case "Password":
+					switch e.Tag() {
+					case "required":
+						msg = "Password harus diisi"
+					case "max":
+						msg = "Password maksimal 20 karakter"
+					case "min":
+						msg = "Password minimal 6 karakter"
+					}
+				}
+				ctx.JSON(400, models.Response{
+					Success: false,
+					Message: msg,
+				})
+				return
+			}
+		}
+		ctx.JSON(400, models.Response{
 			Success: false,
-			Message: err.Error(),
+			Message: "Format input tidak valid",
 		})
 		return
 	}
-	if models.Login(body.Email, body.Password) {
+
+	success, msg := models.Login(body.Email, body.Password)
+	if success {
 		ctx.JSON(200, gin.H{
-			"success": true,
-			"message": "Login berhasil",
-		})
+			"success": true, 
+			"message": msg})
 		return
 	}
+
 	ctx.JSON(401, gin.H{
 		"success": false,
 		"message": "Email atau password salah",
