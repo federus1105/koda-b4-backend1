@@ -159,13 +159,60 @@ func Login(ctx *gin.Context) {
 	success, msg := models.Login(body.Email, body.Password)
 	if success {
 		ctx.JSON(200, gin.H{
-			"success": true, 
+			"success": true,
 			"message": msg})
 		return
 	}
 
-	ctx.JSON(401, gin.H{
-		"success": false,
-		"message": "Email atau password salah",
+	ctx.JSON(401, models.Response{
+		Success: false,
+		Message: "Email atau password salah",
+	})
+}
+
+func UpdatePassword(c *gin.Context) {
+	var req struct {
+		Email       string `json:"email"`
+		NewPassword string `json:"new_password"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, models.Response{
+			Success: false,
+			Message: "Invalid request" + err.Error(),
+		})
+		return
+	}
+
+	var user models.User
+	found := false
+	for _, u := range models.Users {
+		if u.Email == req.Email {
+			user = u
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		c.JSON(404, models.Response{
+			Success: false,
+			Message: "User not found",
+		})
+		return
+	}
+
+	updatedUser, msg, err := models.UpdatePassword(user, req.NewPassword)
+	if err != nil {
+		c.JSON(500, gin.H{
+			"message": msg,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": msg,
+		"user":    updatedUser,
 	})
 }

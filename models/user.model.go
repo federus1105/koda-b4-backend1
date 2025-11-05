@@ -58,6 +58,24 @@ func Register(u User) User {
 	return u
 }
 
+func UpdatePassword(u User, newPassword string) (User, string, error) {
+	argon := argon2.DefaultConfig()
+	hashedPassword, err := argon.HashEncoded([]byte(newPassword))
+	if err != nil {
+		return u, "Failed to hash new password",
+			fmt.Errorf("hashing error: %w", err)
+	}
+	for i := range Users {
+		if Users[i].Email == u.Email {
+			u.Password = string(hashedPassword)
+			return u, "Password updated successfully", nil
+		}
+	}
+	return User{},
+	"User not found for update",
+	fmt.Errorf("user not found")
+}
+
 func DeleteUser(id int) bool {
 	for i, u := range Users {
 		if u.Id == id {
