@@ -1,0 +1,268 @@
+basePath: /
+definitions:
+  controllers.UpdateUser:
+    properties:
+      batch:
+        type: string
+      name:
+        type: string
+    type: object
+  models.UpdatePasswordRequest:
+    properties:
+      email:
+        type: string
+      new_password:
+        type: string
+    type: object
+  models.User:
+    properties:
+      batch:
+        maxLength: 2
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        maxLength: 20
+        type: string
+      password:
+        maxLength: 20
+        type: string
+    required:
+    - batch
+    - email
+    - name
+    - password
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a sample API minitask for backend.
+  title: Auth
+  version: "1.0"
+paths:
+  /users:
+    get:
+      description: Retrieve todos with optional search, pagination, and sort
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 8
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Search by name
+        in: query
+        name: search
+        type: string
+      - default: ASC
+        description: Sort order (ASC/DESC)
+        enum:
+        - ASC
+        - DESC
+        in: query
+        name: sort_order
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get all user with pagination, search, and sorting
+      tags:
+      - User
+    post:
+      consumes:
+      - application/json
+      description: Register
+      parameters:
+      - description: Auth data
+        in: body
+        name: Auth
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register
+      tags:
+      - Auth
+  /users/{id}:
+    delete:
+      description: Delete User by its ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Delete a user by ID
+      tags:
+      - User
+    get:
+      description: Retrieve a user item by its ID
+      parameters:
+      - description: user ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get User by ID
+      tags:
+      - User
+    patch:
+      description: Update user's name and batch by its ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Users data
+        in: body
+        name: Users
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateUser'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.UpdateUser'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Edit an existing User by ID
+      tags:
+      - User
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      description: Login
+      parameters:
+      - description: Auth data
+        in: body
+        name: Auth
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login
+      tags:
+      - Auth
+  /users/update:
+    post:
+      consumes:
+      - application/json
+      description: Update Password
+      parameters:
+      - description: Auth data
+        in: body
+        name: Auth
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdatePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update Password
+      tags:
+      - Auth
+swagger: "2.0"
