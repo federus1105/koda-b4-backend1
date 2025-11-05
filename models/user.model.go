@@ -30,3 +30,52 @@ func GetAllUsers() ([]User, string) {
 	return Users, ""
 }
 
+func GetUserById(id int) *User {
+	for _, user := range Users {
+		if user.Id == id {
+			return &user
+		}
+	}
+	return nil
+}
+
+func Register(u User) []User {
+	u.Id = NextId
+	NextId++
+	Users = append(Users, u)
+	return Users
+}
+
+func DeleteUser(id int) bool {
+	for i, u := range Users {
+		if u.Id == id {
+			Users = append(Users[:i], Users[i+1:]...)
+			return true
+		}
+	}
+	return false
+}
+
+func UpdateUser(id int, name, batch *string) *User {
+	for i, u := range Users {
+		if u.Id == id {
+			if name != nil {
+				Users[i].Name = *name
+			}
+			if batch != nil {
+				Users[i].Batch = *batch
+			}
+			return &Users[i]
+		}
+	}
+	return nil
+}
+
+func Login(email, password string) bool {
+	for _, user := range UsersAuth {
+		if user.Email == email && user.Password == password {
+			return true
+		}
+	}
+	return false
+}
