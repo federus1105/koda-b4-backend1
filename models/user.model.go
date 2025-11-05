@@ -1,6 +1,11 @@
 package models
 
-import "github.com/go-playground/validator/v10"
+import (
+	"fmt"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/matthewhartstonge/argon2"
+)
 
 type User struct {
 	Id       int    `json:"id"`
@@ -17,7 +22,6 @@ type Response struct {
 	Success bool
 	Message string
 }
-
 
 var Users []User
 var NextId = 1
@@ -39,11 +43,19 @@ func GetUserById(id int) *User {
 	return nil
 }
 
-func Register(u User) []User {
+func Register(u User) User {
+	argon := argon2.DefaultConfig()
+
+	hashedPassword, err := argon.HashEncoded([]byte(u.Password))
+	if err != nil {
+		fmt.Println(err)
+	}
+	u.Password = string(hashedPassword)
+
 	u.Id = NextId
 	NextId++
 	Users = append(Users, u)
-	return Users
+	return u
 }
 
 func DeleteUser(id int) bool {
