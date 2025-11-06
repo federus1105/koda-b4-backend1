@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"backend-day1/middleware"
 	"backend-day1/models"
 	"backend-day1/utils"
 	"context"
@@ -244,12 +245,23 @@ func Login(ctx *gin.Context) {
 		})
 		return
 	}
-
+	claims := middleware.NewJWTClaims(body.ID)
+	jwtToken, err := claims.GenToken()
+	if err != nil {
+		fmt.Println("Internal Server Error.\nCause: ", err)
+		ctx.JSON(500, gin.H{
+			"success": false,
+			"error":   "internal server errorrr",
+		})
+		return
+	}
 	success, msg := models.Login(body.Email, body.Password)
 	if success {
 		ctx.JSON(200, gin.H{
 			"success": true,
-			"message": msg})
+			"message": msg,
+			"token":   jwtToken,
+		})
 		return
 	}
 
