@@ -3,6 +3,7 @@ package view
 import (
 	"backend-day1/controllers"
 	"backend-day1/docs"
+	"backend-day1/middleware"
 
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
@@ -19,11 +20,11 @@ func SetupRouter() *gin.Engine {
 	{
 		user.POST("", controllers.Register)
 		user.POST("/login", controllers.Login)
-		user.POST("/update", controllers.UpdatePassword)
-		user.GET("", controllers.GetAllUsers)
-		user.DELETE("/:id", controllers.DeleteUser)
-		user.GET("/:id", controllers.GetUserById)
-		user.PATCH("/:id", controllers.UpdateUserById)
+		user.POST("/update", middleware.VerifyToken, controllers.UpdatePassword)
+		user.GET("", middleware.VerifyToken, controllers.GetAllUsers)
+		user.DELETE("/:id", middleware.VerifyToken, controllers.DeleteUser)
+		user.GET("/:id", middleware.VerifyToken, controllers.GetUserById)
+		user.PATCH("/:id", middleware.VerifyToken, controllers.UpdateUserById)
 	}
 	return router
 }
