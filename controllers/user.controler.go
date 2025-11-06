@@ -130,11 +130,15 @@ func DeleteUser(ctx *gin.Context) {
 
 // UpdateUser godoc
 // @Summary      Edit an existing User by ID
-// @Description  Update user's name and batch by its ID
+// @Description  Update user's name, batch and profile images by its ID
 // @Tags         User
-// @Param        id      path      int             true  "User ID"
-// @Param        Users body        UpdateUser true  "Users data"
-// @Success      200     {object}  UpdateUser
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        id            path      int     true   "User ID"
+// @Param        name          formData  string  false   "User's new name"
+// @Param        batch         formData  string  false   "User's new batch"
+// @Param        profile 	   formData  file    false  "Profile image to upload"
+// @Success      200     {object}  models.Response
 // @Failure      400     {object}  map[string]interface{}
 // @Failure      500     {object}  map[string]interface{}
 // @Router       /users/{id} [patch]
