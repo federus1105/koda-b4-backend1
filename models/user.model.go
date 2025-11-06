@@ -23,13 +23,14 @@ type UpdatePasswordRequest struct {
 }
 
 type Auth struct {
+	ID       int    `json:"id,omitempty"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,max=20"`
 }
 
 type UpdateUserRequest struct {
-	Name          *string `json:"name,omitempty" form:"name"`
-	Batch         *string `json:"batch,omitempty" form:"batch"`
+	Name          *string               `json:"name,omitempty" form:"name"`
+	Batch         *string               `json:"batch,omitempty" form:"batch"`
 	ProfileImages *multipart.FileHeader `json:"profile" form:"profile"`
 }
 
