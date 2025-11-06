@@ -2,17 +2,19 @@ package models
 
 import (
 	"fmt"
+	"mime/multipart"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/matthewhartstonge/argon2"
 )
 
 type User struct {
-	Id       int    `json:"id,omitempty"`
-	Email    string `json:"email,omitempty" binding:"required,email"`
-	Password string `json:"password,omitempty" binding:"required,max=20"`
-	Name     string `json:"name,omitempty" binding:"required,max=20"`
-	Batch    string `json:"batch,omitempty" binding:"required,max=2"`
+	Id            int    `json:"id,omitempty"`
+	Email         string `json:"email,omitempty" binding:"required,email"`
+	Password      string `json:"password,omitempty" binding:"required,max=20"`
+	Name          string `json:"name,omitempty" binding:"required,max=20"`
+	Batch         string `json:"batch,omitempty" binding:"required,max=2"`
+	ProfileImages string `json:"profile" form:"profile"`
 }
 
 type UpdatePasswordRequest struct {
@@ -25,17 +27,16 @@ type Auth struct {
 	Password string `json:"password" validate:"required,max=20"`
 }
 
-
 type UpdateUserRequest struct {
-	Name  *string `json:"name,omitempty"`
-	Batch *string `json:"batch,omitempty"`
+	Name          *string `json:"name,omitempty" form:"name"`
+	Batch         *string `json:"batch,omitempty" form:"batch"`
+	ProfileImages *multipart.FileHeader `json:"profile" form:"profile"`
 }
 
 type Response struct {
 	Success bool
 	Message string
 }
-
 
 var Users []User
 var NextId = 1
@@ -100,7 +101,7 @@ func DeleteUser(id int) bool {
 	return false
 }
 
-func UpdateUser(id int, name, batch *string) *User {
+func UpdateUser(id int, name, batch, profileImage *string) *User {
 	for i, u := range Users {
 		if u.Id == id {
 			if name != nil {
@@ -108,6 +109,9 @@ func UpdateUser(id int, name, batch *string) *User {
 			}
 			if batch != nil {
 				Users[i].Batch = *batch
+			}
+			if profileImage != nil {
+				Users[i].ProfileImages = *profileImage
 			}
 			return &Users[i]
 		}
