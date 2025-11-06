@@ -296,7 +296,13 @@ const docTemplate = `{
                 }
             },
             "patch": {
-                "description": "Update user's name and batch by its ID",
+                "description": "Update user's name, batch and profile images by its ID",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
                     "User"
                 ],
@@ -310,20 +316,29 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Users data",
-                        "name": "Users",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controllers.UpdateUser"
-                        }
+                        "type": "string",
+                        "description": "User's new name",
+                        "name": "name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "User's new batch",
+                        "name": "batch",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Profile image to upload",
+                        "name": "profile",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controllers.UpdateUser"
+                            "$ref": "#/definitions/models.Response"
                         }
                     },
                     "400": {
@@ -345,14 +360,14 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "controllers.UpdateUser": {
+        "models.Response": {
             "type": "object",
             "properties": {
-                "batch": {
+                "message": {
                     "type": "string"
                 },
-                "name": {
-                    "type": "string"
+                "success": {
+                    "type": "boolean"
                 }
             }
         },
@@ -393,6 +408,9 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "maxLength": 20
+                },
+                "profile": {
+                    "type": "string"
                 }
             }
         }

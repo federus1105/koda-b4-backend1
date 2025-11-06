@@ -1,11 +1,11 @@
 basePath: /
 definitions:
-  controllers.UpdateUser:
+  models.Response:
     properties:
-      batch:
+      message:
         type: string
-      name:
-        type: string
+      success:
+        type: boolean
     type: object
   models.UpdatePasswordRequest:
     properties:
@@ -28,6 +28,8 @@ definitions:
         type: string
       password:
         maxLength: 20
+        type: string
+      profile:
         type: string
     required:
     - batch
@@ -168,24 +170,34 @@ paths:
       tags:
       - User
     patch:
-      description: Update user's name and batch by its ID
+      consumes:
+      - multipart/form-data
+      description: Update user's name, batch and profile images by its ID
       parameters:
       - description: User ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Users data
-        in: body
-        name: Users
-        required: true
-        schema:
-          $ref: '#/definitions/controllers.UpdateUser'
+      - description: User's new name
+        in: formData
+        name: name
+        type: string
+      - description: User's new batch
+        in: formData
+        name: batch
+        type: string
+      - description: Profile image to upload
+        in: formData
+        name: profile
+        type: file
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controllers.UpdateUser'
+            $ref: '#/definitions/models.Response'
         "400":
           description: Bad Request
           schema:
