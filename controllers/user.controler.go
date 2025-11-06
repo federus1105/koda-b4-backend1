@@ -2,7 +2,10 @@ package controllers
 
 import (
 	"backend-day1/models"
+	"backend-day1/utils"
+	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -136,7 +139,8 @@ func DeleteUser(ctx *gin.Context) {
 // @Failure      500     {object}  map[string]interface{}
 // @Router       /users/{id} [patch]
 func UpdateUserById(ctx *gin.Context) {
-	id, err := strconv.Atoi(ctx.Param("id"))
+	id := ctx.Param("id")
+	userID, err := strconv.Atoi(id)
 	if err != nil {
 		ctx.JSON(404, models.Response{
 			Success: false,
@@ -144,13 +148,38 @@ func UpdateUserById(ctx *gin.Context) {
 		return
 	}
 	var update models.UpdateUserRequest
-	if err := ctx.ShouldBindJSON(&update); err != nil {
+	if err := ctx.ShouldBind(&update); err != nil {
 		ctx.JSON(404, models.Response{
 			Success: false,
 			Message: err.Error()})
 		return
 	}
-	updated := models.UpdateUser(id, update.Name, update.Batch)
+
+	var filenamePtr *string
+
+	if update.ProfileImages != nil {
+		saveDir := "upload/profile"
+		ctxWithTimeout := context.Background()
+		savePath, generatedFilename, err := utils.UploadImageFile(ctxWithTimeout, update.ProfileImages, saveDir, fmt.Sprintf("user_%d", userID))
+		if err != nil {
+			ctx.JSON(400, models.Response{
+				Success: false,
+				Message: err.Error(),
+			})
+			return
+		}
+
+		if err := ctx.SaveUploadedFile(update.ProfileImages, savePath); err != nil {
+			ctx.JSON(500, models.Response{
+				Success: false,
+				Message: "Gagal menyimpan file",
+			})
+			return
+		}
+
+		filenamePtr = &generatedFilename
+	}
+	updated := models.UpdateUser(userID, update.Name, update.Batch, filenamePtr)
 	if updated == nil {
 		ctx.JSON(404, models.Response{
 			Success: false,
