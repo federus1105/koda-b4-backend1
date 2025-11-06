@@ -1,0 +1,36 @@
+package middleware
+
+import (
+	"errors"
+	"os"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
+)
+
+type Claims struct {
+	ID int `json:"id"`
+	jwt.RegisteredClaims
+}
+
+func NewJWTClaims(ID int) *Claims {
+	godotenv.Load()
+	return &Claims{
+		ID: ID,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 60)),
+			Issuer:    os.Getenv("JWT_ISSUER"),
+		},
+	}
+}
+
+func (c *Claims) GenToken() (string, error) {
+	godotenv.Load()
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		return "", errors.New("no secret found")
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
+	return token.SignedString([]byte(jwtSecret))
+}
