@@ -12,7 +12,15 @@ type ResponseSuccess struct {
 }
 
 type AuthResponse struct {
-	Id            int    `json:"id"`
-	Name          string `json:"name"`
-	Email         string `json:"email"`
+	Id    int    `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+type UserResponse struct {
+	Id      int    `json:"id"`
+	Name    string `json:"name"`
+	Email   string `json:"email"`
+	Batch   string `json:"batch"`
+	Profile string `json:"profile,omitempty"`
 }
