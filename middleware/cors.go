@@ -9,8 +9,11 @@ import (
 )
 
 func CORSMiddleware(ctx *gin.Context) {
-	whitelist := []string{"ORIGIN_URL"}
-	origin := os.Getenv("Origin")
+	origin := ctx.GetHeader("Origin")
+	
+	whitelist := []string{
+		os.Getenv("ORIGIN_URL"),
+	}
 	if slices.Contains(whitelist, origin) {
 		ctx.Header("Access-Control-Allow-Origin", origin)
 	}
