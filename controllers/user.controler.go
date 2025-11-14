@@ -5,13 +5,10 @@ import (
 	"backend-day1/models"
 	"backend-day1/utils"
 	"context"
-	"errors"
 	"fmt"
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 // Get All User
@@ -22,11 +19,16 @@ import (
 // @Param        limit       query  int    false  "Items per page"      default(8)
 // @Param        search      query  string false  "Search by name"
 // @Param        sort_order  query  string false  "Sort order (ASC/DESC)" enums(ASC, DESC) default(ASC)
-// @Success      200         {object}  models.User
-// @Failure      500         {object}  map[string]interface{}
+// @Success      200         {object}  models.ResponseSuccess
 // @Router       /users [get]
+// @Security BearerAuth
 func GetAllUsers(ctx *gin.Context) {
-	users, msg := models.GetAllUsers()
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(ctx.DefaultQuery("limit", "8"))
+	search := ctx.DefaultQuery("search", "")
+	sortOrder := ctx.DefaultQuery("sort_order", "ASC")
+
+	users, msg := models.GetAllUsers(page, limit, search, sortOrder)
 	if msg != "" {
 		ctx.JSON(200, models.Response{
 			Success: false,
@@ -34,9 +36,22 @@ func GetAllUsers(ctx *gin.Context) {
 		})
 		return
 	}
-	ctx.JSON(200, gin.H{
-		"success": true,
-		"data":    users,
+
+	// --- RESPONSE --
+	var resp []models.UserResponse
+	for _, u := range users {
+		resp = append(resp, models.UserResponse{
+			Id:      u.Id,
+			Name:    u.Name,
+			Email:   u.Email,
+			Batch:   u.Batch,
+			Profile: u.ProfileImages,
+		})
+	}
+	ctx.JSON(200, models.ResponseSuccess{
+		Success: true,
+		Message: "Get data successfully",
+		Result:  resp,
 	})
 }
 
@@ -45,14 +60,13 @@ func GetAllUsers(ctx *gin.Context) {
 // @Description  Retrieve a user item by its ID
 // @Tags         User
 // @Param        id   path      int  true  "user ID"
-// @Success      200  {object}  models.User
-// @Failure      400  {object}  map[string]interface{}
-// @Failure      500  {object}  map[string]interface{}
+// @Success      200  {object}  models.ResponseSuccess
 // @Router       /users/{id} [get]
+// @Security BearerAuth
 func GetUserById(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(404, models.Response{
+		ctx.JSON(401, models.Response{
 			Success: false,
 			Message: "ID tidak valid",
 		})
@@ -60,42 +74,25 @@ func GetUserById(ctx *gin.Context) {
 	}
 	user := models.GetUserById(id)
 	if user == nil {
-		ctx.JSON(400, gin.H{
-			"success": false,
-			"message": "User tidak ditemukan",
-		})
-		return
-	}
-	ctx.JSON(200, gin.H{
-		"success": true,
-		"data":    user,
-	})
-}
-
-// Register godoc
-// @Summary      Register
-// @Description  Register
-// @Tags         Auth
-// @Accept       json
-// @Produce      json
-// @Param        Auth  body      models.User  true  "Auth data"
-// @Success      200   {object}  map[string]interface{}
-// @Failure      400   {object}  map[string]interface{}
-// @Failure      500   {object}  map[string]interface{}
-// @Router       /users [post]
-func Register(ctx *gin.Context) {
-	var body models.User
-	if err := ctx.ShouldBindJSON(&body); err != nil {
-		ctx.JSON(200, models.Response{
+		ctx.JSON(404, models.Response{
 			Success: false,
-			Message: err.Error(),
+			Message: "User tidak ditemukan",
 		})
 		return
 	}
-	users := models.Register(body)
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    users,
+
+	userResp := models.UserResponse{
+		Id:      user.Id,
+		Name:    user.Name,
+		Email:   user.Email,
+		Batch:   user.Batch,
+		Profile: user.ProfileImages,
+	}
+
+	ctx.JSON(200, models.ResponseSuccess{
+		Success: true,
+		Message: "Get Data succesfully",
+		Result:  userResp,
 	})
 }
 
@@ -104,10 +101,9 @@ func Register(ctx *gin.Context) {
 // @Description  Delete User by its ID
 // @Tags         User
 // @Param        id  path      int  true  "User ID"
-// @Success      200         {object}  map[string]interface{}
-// @Failure      400         {object}  map[string]interface{}
-// @Failure      500         {object}  map[string]interface{}
+// @Success      200         {object}  models.ResponseSuccess
 // @Router       /users/{id} [delete]
+// @Security BearerAuth
 func DeleteUser(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
@@ -123,9 +119,12 @@ func DeleteUser(ctx *gin.Context) {
 			Message: "User tidak ditemukan"})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "User berhasil dihapus",
+	ctx.JSON(200, models.ResponseSuccess{
+		Success: true,
+		Message: "User berhasil dihapus",
+		Result: gin.H{
+			"iduser": id,
+		},
 	})
 }
 
@@ -140,14 +139,13 @@ func DeleteUser(ctx *gin.Context) {
 // @Param        batch         formData  string  false   "User's new batch"
 // @Param        profile 	   formData  file    false  "Profile image to upload"
 // @Success      200     {object}  models.Response
-// @Failure      400     {object}  map[string]interface{}
-// @Failure      500     {object}  map[string]interface{}
 // @Router       /users/{id} [patch]
+// @Security BearerAuth
 func UpdateUserById(ctx *gin.Context) {
 	id := ctx.Param("id")
 	userID, err := strconv.Atoi(id)
 	if err != nil {
-		ctx.JSON(404, models.Response{
+		ctx.JSON(401, models.Response{
 			Success: false,
 			Message: "ID tidak valid"})
 		return
@@ -160,12 +158,31 @@ func UpdateUserById(ctx *gin.Context) {
 		return
 	}
 
+	// --- CHECKING CLAIMS TOKEN ---
+	claims, exists := ctx.Get("claims")
+	if !exists {
+		fmt.Println("ERROR :", !exists)
+		ctx.AbortWithStatusJSON(403, models.Response{
+			Success: false,
+			Message: "Please log in again",
+		})
+		return
+	}
+	user, ok := claims.(middleware.Claims)
+	if !ok {
+		fmt.Println("ERROR", !ok)
+		ctx.AbortWithStatusJSON(500, models.Response{
+			Success: false,
+			Message: "An error occurred!, please try again.",
+		})
+		return
+	}
 	var filenamePtr *string
 
 	if update.ProfileImages != nil {
 		saveDir := "upload/profile"
 		ctxWithTimeout := context.Background()
-		savePath, generatedFilename, err := utils.UploadImageFile(ctxWithTimeout, update.ProfileImages, saveDir, fmt.Sprintf("user_%d", userID))
+		savePath, generatedFilename, err := utils.UploadImageFile(ctxWithTimeout, update.ProfileImages, saveDir, fmt.Sprintf("user_%d", user.ID))
 		if err != nil {
 			ctx.JSON(400, models.Response{
 				Success: false,
@@ -191,84 +208,19 @@ func UpdateUserById(ctx *gin.Context) {
 			Message: "User tidak ditemukan"})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    updated})
-}
-
-// Login godoc
-// @Summary      Login
-// @Description  Login
-// @Tags         Auth
-// @Accept       json
-// @Produce      json
-// @Param        Auth  body      models.User  true  "Auth data"
-// @Success      200   {object}  map[string]interface{}
-// @Failure      400   {object}  map[string]interface{}
-// @Failure      500   {object}  map[string]interface{}
-// @Router       /users/login [post]
-func Login(ctx *gin.Context) {
-	var body models.Auth
-	if err := ctx.ShouldBindJSON(&body); err != nil {
-		var ve validator.ValidationErrors
-		if errors.As(err, &ve) {
-			for _, e := range ve {
-				var msg string
-				switch e.Field() {
-				case "Email":
-					switch e.Tag() {
-					case "required":
-						msg = "Email harus diisi"
-					case "email":
-						msg = "Email harus sesuai format"
-					}
-				case "Password":
-					switch e.Tag() {
-					case "required":
-						msg = "Password harus diisi"
-					case "max":
-						msg = "Password maksimal 20 karakter"
-					case "min":
-						msg = "Password minimal 6 karakter"
-					}
-				}
-				ctx.JSON(400, models.Response{
-					Success: false,
-					Message: msg,
-				})
-				return
-			}
-		}
-		ctx.JSON(400, models.Response{
-			Success: false,
-			Message: "Format input tidak valid",
-		})
-		return
-	}
-	claims := middleware.NewJWTClaims(body.ID)
-	jwtToken, err := claims.GenToken()
-	if err != nil {
-		fmt.Println("Internal Server Error.\nCause: ", err)
-		ctx.JSON(500, gin.H{
-			"success": false,
-			"error":   "internal server errorrr",
-		})
-		return
-	}
-	success, msg := models.Login(body.Email, body.Password)
-	if success {
-		ctx.JSON(200, gin.H{
-			"success": true,
-			"message": msg,
-			"token":   jwtToken,
-		})
-		return
+	// --- RESPONSE --
+	userResp := models.UserResponse{
+		Id:      updated.Id,
+		Name:    updated.Name,
+		Email:   updated.Email,
+		Batch:   updated.Batch,
+		Profile: updated.ProfileImages,
 	}
 
-	ctx.JSON(401, models.Response{
-		Success: false,
-		Message: "Email atau password salah",
-	})
+	ctx.JSON(200, models.ResponseSuccess{
+		Success: true,
+		Message: "update data successfully",
+		Result:  userResp})
 }
 
 // UpdatePassword godoc
@@ -278,10 +230,9 @@ func Login(ctx *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param Auth body models.UpdatePasswordRequest true "Auth data"
-// @Success      200   {object}  map[string]interface{}
-// @Failure      400   {object}  map[string]interface{}
-// @Failure      500   {object}  map[string]interface{}
+// @Success      200   {object}  models.ResponseSuccess
 // @Router       /users/update [post]
+// @Security BearerAuth
 func UpdatePassword(c *gin.Context) {
 	var req models.UpdatePasswordRequest
 
@@ -313,15 +264,26 @@ func UpdatePassword(c *gin.Context) {
 
 	updatedUser, msg, err := models.UpdatePassword(user, req.NewPassword)
 	if err != nil {
-		c.JSON(500, gin.H{
-			"message": msg,
-			"error":   err.Error(),
+		c.JSON(500, models.Response{
+			Success: false,
+			Message: msg,
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": msg,
-		"user":    updatedUser,
+	var userResp any
+	userResp = updatedUser
+	userResp = models.UserResponse{
+		Id:      user.Id,
+		Name:    user.Name,
+		Email:   user.Email,
+		Batch:   user.Batch,
+		Profile: user.ProfileImages,
+	}
+
+	c.JSON(200, models.ResponseSuccess{
+		Success: true,
+		Message: "Update password successfully",
+		Result:  userResp,
 	})
 }
