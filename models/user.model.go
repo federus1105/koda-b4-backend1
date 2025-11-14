@@ -3,51 +3,71 @@ package models
 import (
 	"fmt"
 	"mime/multipart"
+	"sort"
+	"strings"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/matthewhartstonge/argon2"
 )
+
+type UpdatePasswordRequest struct {
+	Email       string `json:"email" binding:"email"`
+	NewPassword string `json:"new_password" binding:"password_complex"`
+}
 
 type User struct {
 	Id            int    `json:"id,omitempty"`
 	Email         string `json:"email,omitempty" binding:"required,email"`
-	Password      string `json:"password,omitempty" binding:"required,max=20"`
+	Password      string `json:"password,omitempty" binding:"assword_complex"`
 	Name          string `json:"name,omitempty" binding:"required,max=20"`
-	Batch         string `json:"batch,omitempty" binding:"required,max=2"`
+	Batch         string `json:"batch,omitempty" binding:"gte=0"`
 	ProfileImages string `json:"profile" form:"profile"`
 }
 
-type UpdatePasswordRequest struct {
-	Email       string `json:"email"`
-	NewPassword string `json:"new_password"`
-}
-
-type Auth struct {
-	ID       int    `json:"id,omitempty"`
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,max=20"`
-}
-
 type UpdateUserRequest struct {
-	Name          *string               `json:"name,omitempty" form:"name"`
-	Batch         *string               `json:"batch,omitempty" form:"batch"`
+	Name          *string               `json:"name,omitempty" form:"name" binding:"max=20"`
+	Batch         *string               `json:"batch,omitempty" form:"batch" binding:"gte=0"`
 	ProfileImages *multipart.FileHeader `json:"profile" form:"profile"`
 }
 
-type Response struct {
-	Success bool
-	Message string
-}
-
 var Users []User
-var NextId = 1
-var validate = validator.New()
 
-func GetAllUsers() ([]User, string) {
+func GetAllUsers(page, limit int, search string, sortOrder string) ([]User, string) {
 	if len(Users) == 0 {
 		return nil, "List user kosong"
 	}
-	return Users, ""
+
+	// --- SEARCH --
+	var filtered []User
+	if search == "" {
+		filtered = Users
+	} else {
+		for _, u := range Users {
+			if strings.Contains(strings.ToLower(u.Name), strings.ToLower(search)) {
+				filtered = append(filtered, u)
+			}
+		}
+	}
+
+	// --- SORTING ---
+	sort.Slice(filtered, func(i, j int) bool {
+		if strings.ToUpper(sortOrder) == "DESC" {
+			return filtered[i].Name > filtered[j].Name
+		}
+		// --- DEFAULT ASC ---
+		return filtered[i].Name < filtered[j].Name
+	})
+
+	// --- PAGINATION ---
+	start := (page - 1) * limit
+	if start > len(filtered)-1 {
+		return []User{}, ""
+	}
+	end := start + limit
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+
+	return filtered[start:end], ""
 }
 
 func GetUserById(id int) *User {
@@ -57,21 +77,6 @@ func GetUserById(id int) *User {
 		}
 	}
 	return nil
-}
-
-func Register(u User) User {
-	argon := argon2.DefaultConfig()
-
-	hashedPassword, err := argon.HashEncoded([]byte(u.Password))
-	if err != nil {
-		fmt.Println(err)
-	}
-	u.Password = string(hashedPassword)
-
-	u.Id = NextId
-	NextId++
-	Users = append(Users, u)
-	return u
 }
 
 func UpdatePassword(u User, newPassword string) (User, string, error) {
@@ -118,58 +123,4 @@ func UpdateUser(id int, name, batch, profileImage *string) *User {
 		}
 	}
 	return nil
-}
-
-func Login(email, password string) (bool, string) {
-	auth := Auth{
-		Email:    email,
-		Password: password,
-	}
-
-	err := validate.Struct(auth)
-	if err != nil {
-		for _, e := range err.(validator.ValidationErrors) {
-			switch e.Field() {
-			case "email":
-				if e.Tag() == "required" {
-					return false, "Email harus diisi"
-				}
-				if e.Tag() == "email" {
-					return false, "Email harus sesuai format"
-				}
-			case "password":
-				if e.Tag() == "required" {
-					return false, "Password harus diisi"
-				}
-				if e.Tag() == "max" {
-					return false, "Password maksimal 20 karakter"
-				}
-			}
-		}
-	}
-	var storedUser User
-	found := false
-	for _, user := range Users {
-		if user.Email == email {
-			storedUser = user
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		return false, "Email atau password salah"
-	}
-
-	match, err := argon2.VerifyEncoded([]byte(password), []byte(storedUser.Password))
-	if err != nil {
-		fmt.Printf("Error during verification: %v\n", err)
-		return false, "Email atau password salah"
-	}
-
-	if !match {
-		fmt.Println("invalid password attempt")
-		return false, "Email atau password salah"
-	}
-	return true, "Login berhasil"
 }
