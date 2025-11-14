@@ -7,6 +7,14 @@ definitions:
       success:
         type: boolean
     type: object
+  models.ResponseSuccess:
+    properties:
+      message:
+        type: string
+      result: {}
+      success:
+        type: boolean
+    type: object
   models.UpdatePasswordRequest:
     properties:
       email:
@@ -14,28 +22,26 @@ definitions:
       new_password:
         type: string
     type: object
-  models.User:
+  utils.LoginRequest:
     properties:
-      batch:
-        maxLength: 2
-        type: string
       email:
-        type: string
-      id:
-        type: integer
-      name:
-        maxLength: 20
+        example: youremail@gmail.com
         type: string
       password:
-        maxLength: 20
+        example: Password!#
         type: string
-      profile:
+    type: object
+  utils.RegisterRequest:
+    properties:
+      email:
+        example: youremail@gmail.com
         type: string
-    required:
-    - batch
-    - email
-    - name
-    - password
+      name:
+        example: yourname
+        type: string
+      password:
+        example: Password!#
+        type: string
     type: object
 host: localhost:8080
 info:
@@ -44,6 +50,42 @@ info:
   title: Auth
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      description: Login user and get JWT token
+      parameters:
+      - description: Login Info
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/utils.LoginRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ResponseSuccess'
+      summary: Login user
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      description: Register user and Hash Password
+      parameters:
+      - description: Register Info
+        in: body
+        name: Register
+        required: true
+        schema:
+          $ref: '#/definitions/utils.RegisterRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ResponseSuccess'
+      summary: Register user
+      tags:
+      - Auth
   /users:
     get:
       description: Retrieve todos with optional search, pagination, and sort
@@ -74,47 +116,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.User'
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/models.ResponseSuccess'
+      security:
+      - BearerAuth: []
       summary: Get all user with pagination, search, and sorting
       tags:
       - User
-    post:
-      consumes:
-      - application/json
-      description: Register
-      parameters:
-      - description: Auth data
-        in: body
-        name: Auth
-        required: true
-        schema:
-          $ref: '#/definitions/models.User'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Register
-      tags:
-      - Auth
   /users/{id}:
     delete:
       description: Delete User by its ID
@@ -128,18 +135,9 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/models.ResponseSuccess'
+      security:
+      - BearerAuth: []
       summary: Delete a user by ID
       tags:
       - User
@@ -155,17 +153,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.User'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/models.ResponseSuccess'
+      security:
+      - BearerAuth: []
       summary: Get User by ID
       tags:
       - User
@@ -198,52 +188,11 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.Response'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
+      security:
+      - BearerAuth: []
       summary: Edit an existing User by ID
       tags:
       - User
-  /users/login:
-    post:
-      consumes:
-      - application/json
-      description: Login
-      parameters:
-      - description: Auth data
-        in: body
-        name: Auth
-        required: true
-        schema:
-          $ref: '#/definitions/models.User'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Login
-      tags:
-      - Auth
   /users/update:
     post:
       consumes:
@@ -262,19 +211,16 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/models.ResponseSuccess'
+      security:
+      - BearerAuth: []
       summary: Update Password
       tags:
       - Auth
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and your JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
