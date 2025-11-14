@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	"backend-day1/middleware"
 	"backend-day1/models"
 	"backend-day1/utils"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -11,16 +13,12 @@ import (
 )
 
 // Register godoc
-// @Summary      Register
-// @Description  Register
-// @Tags         Auth
-// @Accept       json
-// @Produce      json
-// @Param        Auth  body      models.User  true  "Auth data"
-// @Success      200   {object}  map[string]interface{}
-// @Failure      400   {object}  map[string]interface{}
-// @Failure      500   {object}  map[string]interface{}
-// @Router       /users [post]
+// @Summary 	Register user
+// @Description Register user and Hash Password
+// @Tags 		Auth
+// @Param 		Register body 	utils.RegisterRequest  true 	"Register Info"
+// @Success 	200 {object} 	models.ResponseSuccess
+// @Router 		/auth/register [post]
 func Register(ctx *gin.Context) {
 	var input models.Auth
 	// --- VALIDATION ---
@@ -60,16 +58,12 @@ func Register(ctx *gin.Context) {
 }
 
 // Login godoc
-// @Summary      Login
-// @Description  Login
-// @Tags         Auth
-// @Accept       json
-// @Produce      json
-// @Param        Auth  body      models.User  true  "Auth data"
-// @Success      200   {object}  map[string]interface{}
-// @Failure      400   {object}  map[string]interface{}
-// @Failure      500   {object}  map[string]interface{}
-// @Router       /users/login [post]
+// @Summary 	Login user
+// @Description Login user and get JWT token
+// @Tags 		Auth
+// @Param 		login body 		utils.LoginRequest  true 	"Login Info"
+// @Success 	200 {object} 	models.ResponseSuccess
+// @Router 		/auth/login [post]
 func Login(ctx *gin.Context) {
 	var input models.Auth
 
@@ -104,6 +98,17 @@ func Login(ctx *gin.Context) {
 		})
 		return
 	}
+	// --- GENERATE JWT TOKEN
+	claims := middleware.NewJWTClaims(user.Id)
+	jwtToken, err := claims.GenToken()
+	if err != nil {
+		fmt.Println("Internal Server Error.\nCause: ", err)
+		ctx.JSON(500, models.Response{
+			Success: false,
+			Message: "internal server errorrr",
+		})
+		return
+	}
 
 	// --- RESPONSE --
 	userResp := models.AuthResponse{
@@ -115,6 +120,9 @@ func Login(ctx *gin.Context) {
 	ctx.JSON(200, models.ResponseSuccess{
 		Success: true,
 		Message: msg,
-		Result:  userResp,
+		Result: gin.H{
+			"data":  userResp,
+			"token": jwtToken,
+		},
 	})
 }
